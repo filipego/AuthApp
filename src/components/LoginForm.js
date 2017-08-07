@@ -1,13 +1,58 @@
 // Import libraries for making a component
 import React, { Component } from 'react';
-import { Button, Card, CardSection, Input } from './common';
+import { Text } from 'react-native';
+import firebase from 'firebase';
+import { Button, Card, CardSection, Input, Spinner } from './common';
 
 class LoginForm extends Component {
 
   state = {
     email: '',
-    password: ''
+    password: '',
+    error: '',
+    loading: false
   };
+
+  onButtonPress() {
+    const { email, password } = this.state;
+
+    this.setState({
+      error: '',
+      loading: true
+    });
+
+    firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(this.onLoginSucces.bind(this))
+    .catch(() => {
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then(this.onLoginSucces.bind(this))
+      .catch(this.onLoginFail.bind(this));
+    });
+  }
+
+  onLoginFail() {
+    this.setState({ error: 'Authentication Failed' });
+  }
+
+  onLoginSucces() {
+    this.setState({
+      email: '',
+      password: '',
+      loading: false,
+      error: ''
+    });
+  }
+
+  renderButton() {
+    if (this.state.loading) {
+      return <Spinner size='small' />;
+    }
+    return (
+      <Button onPress={this.onButtonPress.bind(this)}>
+        Log in
+      </Button>
+    );
+  }
 
   render() {
     return (
@@ -20,6 +65,7 @@ class LoginForm extends Component {
             onChangeText={email => this.setState({ email })}
           />
         </CardSection>
+
         <CardSection>
           <Input
             secureTextEntry
@@ -29,14 +75,25 @@ class LoginForm extends Component {
             onChangeText={password => this.setState({ password })}
           />
         </CardSection>
+
+        <Text style={styles.errorTextStyle}>
+          {this.state.error}
+        </Text>
+
         <CardSection>
-          <Button>
-            Log in
-          </Button>
+          {this.renderButton()}
         </CardSection>
       </Card>
     );
   }
 }
+
+const styles = {
+  errorTextStyle: {
+    fontSize: 20,
+    alignSelf: 'center',
+    color: 'red'
+  }
+};
 
 export default LoginForm;
